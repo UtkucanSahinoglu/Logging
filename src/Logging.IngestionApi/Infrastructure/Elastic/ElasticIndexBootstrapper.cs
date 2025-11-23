@@ -86,40 +86,41 @@ public sealed class ElasticIndexBootstrapper
     {
         var templateName = ElasticIndexNames.LogsIndexTemplateName;
 
-        var exists = await _client.Indices.ExistsIndexTemplateAsync(templateName, ct);
-        if (exists.Exists)
-            return;
+        var json = """
+            {
+              "index_patterns": ["logs-*"],
+              "template": {
+                "settings": {
+                  "number_of_shards": 1,
+                  "number_of_replicas": 0,
+                  "index.lifecycle.name": "logs-ilm"
+                },
+                "mappings": {
+                  "properties": {
+                    "@timestamp": { "type": "date" },
+                    "message": { "type": "text" },
+                    "logLevel": { "type": "keyword" },
+                    "serviceName": { "type": "keyword" },
+                    "serviceEnvironment": { "type": "keyword" },
+                    "serviceVersion": { "type": "keyword" },
+                    "traceId": { "type": "keyword" },
+                    "spanId": { "type": "keyword" },
+                    "userId": { "type": "keyword" },
+                    "tenantId": { "type": "keyword" }
+                  }
+                }
+              }
+            }
+            """;
 
-        var resp = await _client.Indices.PutIndexTemplateAsync(
-            templateName,
-            t => t
-                .IndexPatterns("logs-*")
-                .Template(b => b
-                    .Settings(s => s
-                        .NumberOfShards(_settings.NumberOfShards)
-                        .NumberOfReplicas(_settings.NumberOfReplicas)
-                        .Lifecycle(l => l.Name(ElasticIndexNames.LogsIlmPolicyName))
-                    )
-                    .Mappings(m => m
-                        .Properties(p => p
-                            .Date(ElasticFieldNames.Timestamp)
-                            .Text(ElasticFieldNames.Message)
-                            .Keyword(ElasticFieldNames.LogLevel)
-                            .Keyword(ElasticFieldNames.ServiceName)
-                            .Keyword(ElasticFieldNames.ServiceEnvironment)
-                            .Keyword(ElasticFieldNames.ServiceVersion)
-                            .Keyword(ElasticFieldNames.TraceId)
-                            .Keyword(ElasticFieldNames.SpanId)
-                            .Keyword(ElasticFieldNames.UserId)
-                            .Keyword(ElasticFieldNames.TenantId)
-                        )
-                    )
-                ),
+        var resp = await _client.Transport.PutAsync<StringResponse>(
+            $"/_index_template/{templateName}",
+            PostData.String(json),
             ct
         );
 
-        if (!resp.IsValidResponse)
-            _logger.LogError("Index template creation failed: {Error}",
-                resp.ElasticsearchServerError);
+        if (!resp.ApiCallDetails.HasSuccessfulStatusCode)
+            _logger.LogError("Template failed: {Error}", resp.Body);
     }
+
 }

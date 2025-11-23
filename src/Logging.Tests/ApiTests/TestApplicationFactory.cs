@@ -1,35 +1,47 @@
 ﻿using Logging.Abstractions.Interfaces;
+using Logging.IngestionApi;
 using Logging.IngestionApi.Infrastructure.Elastic;
-using Logging.IngestionApi.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
-using Microsoft.VisualStudio.TestPlatform.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Moq;
+
+namespace Logging.Tests.ApiTests;
 
 public class TestApplicationFactory : WebApplicationFactory<Program>
 {
+    public Mock<ILogWriter> WriterMock { get; } = new();
+    public Mock<ILogValidationService> ValidatorMock { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseEnvironment("Testing");
+        builder.UseSetting(WebHostDefaults.EnvironmentKey, "Testing");
+
         builder.ConfigureAppConfiguration((context, config) =>
         {
-            var settings = new Dictionary<string, string?>
+            config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ApiKeySettings:ApiKey"] = "test-key",
-                ["Elasticsearch:Url"] = "http://localhost:9999",
-                ["Elasticsearch:NumberOfShards"] = "1",
-                ["Elasticsearch:NumberOfReplicas"] = "0"
-            };
-
-            config.AddInMemoryCollection(settings);
+                ["ApiKey:HeaderName"] = "X-API-KEY",
+                ["ApiKey:Value"] = "test-key",
+            });
         });
 
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<ElasticIndexBootstrapper>();
             services.RemoveAll<ILogWriter>();
-            services.AddSingleton<ILogWriter, FakeLogWriter>();
+            services.RemoveAll<ILogValidationService>();
+
+            services.AddSingleton<ILogWriter>(WriterMock.Object);
+            services.AddSingleton<ILogValidationService>(ValidatorMock.Object);
         });
+    }
+
+    protected override void ConfigureClient(HttpClient client)
+    {
+        client.DefaultRequestHeaders.Add("X-API-KEY", "test-key");
     }
 }

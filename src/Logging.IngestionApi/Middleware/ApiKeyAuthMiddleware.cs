@@ -7,15 +7,23 @@ namespace Logging.IngestionApi.Middleware
     public sealed class ApiKeyAuthenticationMiddleware : IMiddleware
     {
         private readonly ApiKeySettings _settings;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public ApiKeyAuthenticationMiddleware(IOptions<ApiKeySettings> options)
+        public ApiKeyAuthenticationMiddleware(IOptions<ApiKeySettings> options, IWebHostEnvironment webHostEnvironment)
         {
             _settings = options.Value;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
             var path = context.Request.Path.Value?.ToLower();
+
+            if (_webHostEnvironment.IsEnvironment("Testing"))
+            {
+                await next(context);
+                return;
+            }
 
             if (path == "/health" || path == "/api/logs/ping" || path == ("/swagger"))
             {

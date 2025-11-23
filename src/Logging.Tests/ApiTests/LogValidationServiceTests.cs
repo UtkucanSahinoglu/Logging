@@ -3,7 +3,7 @@ using Logging.Abstractions.Contracts;
 using Logging.IngestionApi.Services;
 using Xunit;
 
-namespace Logging.Tests.Validation;
+namespace Logging.Tests.ApiTests;
 
 public class LogValidationServiceTests
 {

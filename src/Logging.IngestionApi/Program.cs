@@ -12,6 +12,9 @@ var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
 var config = builder.Configuration;
 
+builder.Configuration.AddEnvironmentVariables();
+builder.Host.UseEnvironment(builder.Environment.EnvironmentName);
+
 // Settings
 services.Configure<ApiKeySettings>(config.GetSection(ApiKeySettings.SectionName));
 services.Configure<ElasticsearchSettings>(config.GetSection(ElasticsearchSettings.SectionName));
@@ -88,6 +91,7 @@ app.UseApiKeyAuthentication();
 
 
 // Bootstrap index + ILM
+if (!app.Environment.IsEnvironment("Testing"))
 {
     using var scope = app.Services.CreateScope();
     var bootstrapper = scope.ServiceProvider.GetRequiredService<ElasticIndexBootstrapper>();
@@ -98,3 +102,5 @@ app.MapLogEndpoints();
 app.MapGet("/health", () => Results.Ok("OK"));
 
 app.Run();
+
+public partial class Program { }
