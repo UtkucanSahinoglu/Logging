@@ -1,0 +1,42 @@
+﻿version: "3.8"
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: elastic
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVAOPTS=-Xms512m -Xmx512m
+
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    container_name: kibana
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5601:5601"
+
+  ingestion-api:
+    build:
+      context: ./src
+      dockerfile: Logging.IngestionApi/Dockerfile
+    container_name: ingestion-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - elasticsearch

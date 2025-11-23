@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/deployment/" />
+  <Folder Name="/docs/" />
+  <Folder Name="/scripts/" />
+  <Folder Name="/Solution Items/">
+    <File Path=".dockerignore" />
+    <File Path=".editorconfig" />
+    <File Path="docker-compose.yml" />
+    <File Path="global.json" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Logging.Abstractions/Logging.Abstractions.csproj" />
+    <Project Path="src/Logging.Client/Logging.Client.csproj" />
+    <Project Path="src/Logging.IngestionApi/Logging.IngestionApi.csproj" />
+    <Project Path="src/Logging.Tests/Logging.Tests.csproj" />
+    <Project Path="src/Logging.Worker/Logging.Worker.csproj" />
+  </Folder>
+</Solution>
